@@ -29,6 +29,9 @@ env/
 # Streamlit (config.toml SÍ se versiona: define el tema; solo secrets afuera)
 .streamlit/secrets.toml
 
+# Documentos internos
+MEJORAS.md
+
 # Pytest
 .pytest_cache/
 .coverage
