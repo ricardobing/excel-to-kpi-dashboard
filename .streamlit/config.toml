@@ -1,0 +1,11 @@
+[theme]
+# Tema oscuro nativo: así los popovers (calendario del date picker, menús de
+# selects) también salen oscuros, en vez del tema claro por defecto del visitante.
+base = "dark"
+primaryColor = "#2E5FA3"
+backgroundColor = "#0F1923"
+secondaryBackgroundColor = "#1A2535"
+textColor = "#F0F4F8"
+
+[browser]
+gatherUsageStats = false

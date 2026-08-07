@@ -26,8 +26,8 @@ venv/
 ENV/
 env/
 
-# Streamlit
-.streamlit/
+# Streamlit (config.toml SÍ se versiona: define el tema; solo secrets afuera)
+.streamlit/secrets.toml
 
 # Pytest
 .pytest_cache/
