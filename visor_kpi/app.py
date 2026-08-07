@@ -7,6 +7,7 @@ import os
 import sys
 import streamlit as st
 from datetime import date
+from dateutil.relativedelta import relativedelta
 
 # ── Path setup ────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +28,7 @@ if os.path.exists(css_path):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # ── Imports del proyecto ──────────────────────────────────────
-from components.filters import render_sidebar_filters, init_session_state
+from components.filters import render_sidebar_filters, init_session_state, render_sin_datos
 from src.data_loader    import load_data, get_filtered_data, get_filtered_data_periodo_anterior, check_data_available
 from src.kpi_engine     import (
     kpi_ventas_periodo, kpi_margen, kpi_cobertura_clientes,
@@ -100,8 +101,7 @@ st.markdown(
 
 # ── Manejar DataFrame vacío ───────────────────────────────────
 if df.empty:
-    st.warning("⚠️ No hay datos para los filtros seleccionados. Ajustá el período o los filtros.")
-    st.stop()
+    render_sin_datos()
 
 # ── Calcular KPIs ─────────────────────────────────────────────
 kv    = kpi_ventas_periodo(df, df_ant, objetivos_df, fecha_desde, fecha_hasta)
@@ -110,7 +110,11 @@ kc    = kpi_cobertura_clientes(df, clientes_df, df_ant)
 kv_df = kpi_por_vendedor(df, objetivos_df, df_ant, fecha_desde, fecha_hasta)
 kp_df = kpi_productos(df, df_ant)
 kcli  = kpi_clientes(df, clientes_df, df_ant, fecha_hasta)
-evo   = kpi_evolucion_mensual(df, objetivos_df)
+# La evolución siempre muestra los últimos 12 meses hasta el fin del período
+# seleccionado (con un solo mes filtrado, el gráfico quedaba con un punto).
+evo_desde = fecha_hasta.replace(day=1) - relativedelta(months=11)
+df_evo    = get_filtered_data(evo_desde, fecha_hasta, vendedores_sel, zonas_sel, canales_sel)
+evo   = kpi_evolucion_mensual(df_evo, objetivos_df)
 alertas = get_alertas_activas(df, df_ant, clientes_df, productos_df, objetivos_df, fecha_hasta)
 
 # ══════════════════════════════════════════════════════════════

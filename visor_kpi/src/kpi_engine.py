@@ -399,10 +399,13 @@ def generar_insight_ejecutivo(
         from config import fmt_delta
         delta_txt = f", {fmt_delta(kpi_ventas['importe_vs_anterior'])} vs período anterior"
 
+    # HTML (no markdown): el insight se renderiza dentro de un <div> con
+    # unsafe_allow_html, donde los ** de markdown no se interpretan.
     return (
-        f"El equipo lleva **{importe}** en ventas{delta_txt}, alcanzando el **{cumpl}** del objetivo. "
+        f"El equipo lleva <strong>{importe}</strong> en ventas{delta_txt}, "
+        f"alcanzando el <strong>{cumpl}</strong> del objetivo. "
         f"{n_verde} vendedores están en 🟢 verde, {n_naranja} en 🟡 naranja y {n_rojo} en 🔴 rojo. "
-        f"Se detectaron **{n_alertas} alertas activas**: "
+        f"Se detectaron <strong>{n_alertas} alertas activas</strong>: "
         f"{n_criticas} críticas, {n_medias} medias, {n_info} informativas."
     )
 

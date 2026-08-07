@@ -15,7 +15,7 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from components.filters  import render_sidebar_filters, init_session_state
+from components.filters  import render_sidebar_filters, init_session_state, render_sin_datos
 from src.data_loader     import load_data, get_filtered_data, get_filtered_data_periodo_anterior, check_data_available
 from src.kpi_engine      import kpi_cobertura_clientes, kpi_clientes, kpi_evolucion_mensual
 from src.pareto          import get_concentracion_pareto
@@ -54,8 +54,7 @@ st.markdown(
 )
 
 if df.empty:
-    st.warning("Sin datos para el período seleccionado.")
-    st.stop()
+    render_sin_datos()
 
 kc   = kpi_cobertura_clientes(df, cli_df, df_ant)
 kcli = kpi_clientes(df, cli_df, df_ant, fecha_hasta)
@@ -214,9 +213,13 @@ if not kcli.empty:
                 dias = cli_row.iloc[0].get("dias_desde_ultima_compra", 0)
                 st.metric("Días sin compra", f"{int(dias)} días")
 
-            # Evolución del cliente
+            # Evolución del cliente: últimos 6 meses hasta el fin del período
             if not df_cli_det.empty:
-                evo_cli = kpi_evolucion_mensual(df_cli_det, n_meses=6)
+                from dateutil.relativedelta import relativedelta
+                evo_desde = fecha_hasta.replace(day=1) - relativedelta(months=5)
+                df_cli_evo = get_filtered_data(evo_desde, fecha_hasta, None, None, None)
+                df_cli_evo = df_cli_evo[df_cli_evo["id_cliente"] == cli_id_sel]
+                evo_cli = kpi_evolucion_mensual(df_cli_evo, n_meses=6)
                 if not evo_cli.empty:
                     fig_cli = chart_evolucion_ventas(evo_cli, mostrar_objetivo=False,
                                                       title=f"Evolución de {cliente_sel}")

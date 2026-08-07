@@ -170,8 +170,13 @@ def get_emoji_semaforo(cumplimiento: float) -> str:
 
 # ─── PERÍODOS PREDEFINIDOS ─────────────────────────────────────────────────────
 
-def get_periodos() -> dict:
-    hoy = date.today()
+def get_periodos(referencia: date | None = None) -> dict:
+    """Períodos predefinidos relativos a `referencia` (por defecto, hoy).
+
+    La app pasa como referencia la última fecha CON DATOS: si el dataset es
+    histórico, 'Este mes' es el último mes con ventas y nunca un rango vacío.
+    """
+    hoy = referencia or date.today()
     primer_dia_mes = hoy.replace(day=1)
     ultimo_dia_mes_ant = primer_dia_mes - relativedelta(days=1)
     primer_dia_mes_ant = ultimo_dia_mes_ant.replace(day=1)

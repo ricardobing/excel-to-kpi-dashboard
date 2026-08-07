@@ -181,6 +181,15 @@ def get_filtered_data_periodo_anterior(
 # HELPERS
 # ═══════════════════════════════════════════════════════════════
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def get_rango_datos() -> tuple[date, date]:
+    """Rango real de fechas con ventas (min, max). Los filtros de la app se anclan
+    a este rango: el dataset de demo es histórico y 'hoy' puede caer fuera de él."""
+    data = load_data()
+    fechas = data["ventas"]["fecha"]
+    return fechas.min().date(), fechas.max().date()
+
+
 def get_lista_vendedores() -> list[dict]:
     """Retorna lista de vendedores activos para filtros."""
     data = load_data()

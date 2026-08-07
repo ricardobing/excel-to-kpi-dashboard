@@ -14,7 +14,7 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from components.filters  import render_sidebar_filters, init_session_state
+from components.filters  import render_sidebar_filters, init_session_state, render_sin_datos
 from src.data_loader     import load_data, get_filtered_data, get_filtered_data_periodo_anterior, check_data_available
 from src.kpi_engine      import (
     kpi_ventas_periodo, kpi_por_vendedor, kpi_clientes, kpi_productos,
@@ -104,15 +104,18 @@ st.markdown(
 )
 
 if df.empty:
-    st.warning("Sin datos para este vendedor en el período seleccionado.")
-    st.stop()
+    render_sin_datos()
 
 # ── KPIs ──────────────────────────────────────────────────────
 kv     = kpi_ventas_periodo(df, df_ant, obj_df, fecha_desde, fecha_hasta)
 kv_all = kpi_por_vendedor(df_eq, obj_df, df_eq_ant, fecha_desde, fecha_hasta)
 kcli   = kpi_clientes(df, cli_df, df_ant, fecha_hasta)
 kp     = kpi_productos(df, df_ant)
-evo    = kpi_evolucion_mensual(df, obj_df, vendedor_id, n_meses=6)
+# Evolución: últimos 6 meses hasta el fin del período seleccionado
+from dateutil.relativedelta import relativedelta
+evo_desde = fecha_hasta.replace(day=1) - relativedelta(months=5)
+df_evo    = get_filtered_data(evo_desde, fecha_hasta, [vendedor_id], zonas_sel, canales_sel)
+evo    = kpi_evolucion_mensual(df_evo, obj_df, vendedor_id, n_meses=6)
 
 c1, c2, c3, c4 = st.columns(4)
 with c1:

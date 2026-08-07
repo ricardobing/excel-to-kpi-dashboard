@@ -14,7 +14,7 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from components.filters  import render_sidebar_filters, init_session_state
+from components.filters  import render_sidebar_filters, init_session_state, render_sin_datos
 from src.data_loader     import load_data, get_filtered_data, get_filtered_data_periodo_anterior, check_data_available
 from src.kpi_engine      import kpi_ventas_periodo, kpi_por_vendedor, kpi_evolucion_mensual
 from components.kpi_card import render_kpi_card
@@ -52,12 +52,16 @@ st.markdown(
 )
 
 if df.empty:
-    st.warning("Sin datos para el período seleccionado.")
-    st.stop()
+    render_sin_datos()
 
 kv    = kpi_ventas_periodo(df, df_ant, obj_df, fecha_desde, fecha_hasta)
 kv_df = kpi_por_vendedor(df, obj_df, df_ant, fecha_desde, fecha_hasta)
-evo   = kpi_evolucion_mensual(df, obj_df)
+
+# Evolución: siempre últimos 12 meses hasta el fin del período seleccionado
+from dateutil.relativedelta import relativedelta
+evo_desde = fecha_hasta.replace(day=1) - relativedelta(months=11)
+df_evo    = get_filtered_data(evo_desde, fecha_hasta, vendedores_sel, zonas_sel, canales_sel)
+evo   = kpi_evolucion_mensual(df_evo, obj_df)
 
 # ── KPI Row ───────────────────────────────────────────────────
 c1, c2, c3, c4 = st.columns(4)

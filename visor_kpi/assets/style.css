@@ -11,13 +11,30 @@
     font-family: 'Inter', sans-serif !important;
 }
 
+/* los íconos de Streamlit usan la fuente Material Symbols: si se les fuerza
+   Inter, se ven como texto literal ("keyboard_arrow_right") */
+[data-testid="stIconMaterial"],
+.material-symbols-rounded,
+[class*="material-symbols"] {
+    font-family: 'Material Symbols Rounded' !important;
+}
+
 /* ── Ocultar elementos de Streamlit por defecto ──────────── */
+/* OJO: el header NO se oculta por completo — contiene el botón que abre la
+   sidebar en móvil. Sin él, en el celular no se puede llegar a los filtros. */
 #MainMenu { visibility: hidden; }
 footer { visibility: hidden; }
-header { visibility: hidden; }
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 2.75rem;
+}
 .stDeployButton { display: none; }
 .viewerBadge_container__1QSob { display: none; }
-[data-testid="stToolbar"] { display: none; }
+/* la toolbar NO se oculta entera: contiene el botón que reabre la sidebar.
+   Se ocultan solo sus acciones (Deploy, menú de tres puntos). */
+[data-testid="stToolbarActions"],
+[data-testid="stAppDeployButton"],
+[data-testid="stMainMenu"] { display: none; }
 
 /* ── Fondo principal ─────────────────────────────────────── */
 .stApp {
@@ -366,6 +383,13 @@ header { visibility: hidden; }
 
 /* ── Responsive (mobile) ─────────────────────────────────── */
 @media (max-width: 768px) {
+    /* botón para abrir la sidebar bien visible sobre el fondo oscuro */
+    header[data-testid="stHeader"] button,
+    [data-testid="stSidebarCollapsedControl"] button {
+        color: #F0F4F8 !important;
+        background: #1A2535 !important;
+        border-radius: 8px !important;
+    }
     .kpi-value {
         font-size: 22px;
     }

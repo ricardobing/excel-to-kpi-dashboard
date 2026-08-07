@@ -13,9 +13,25 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import COLORS, ZONAS, CANALES, get_periodos
 
 
+def get_hoy_datos() -> tuple[date, date, date]:
+    """(fecha_min_datos, fecha_max_datos, hoy_ref).
+
+    hoy_ref es el 'hoy' del negocio: la última fecha con ventas. Todos los
+    períodos se anclan ahí para que el dashboard nunca abra en un rango vacío
+    (el dataset de demo es histórico y date.today() puede caer fuera de él).
+    """
+    try:
+        from src.data_loader import get_rango_datos
+        fecha_min, fecha_max = get_rango_datos()
+    except Exception:
+        hoy = date.today()
+        return hoy.replace(month=1, day=1), hoy, hoy
+    return fecha_min, fecha_max, min(date.today(), fecha_max)
+
+
 def init_session_state() -> None:
     """Inicializa el estado global de filtros si no existe."""
-    hoy = date.today()
+    _, _, hoy = get_hoy_datos()
     primer_dia_mes = hoy.replace(day=1)
 
     defaults = {
@@ -38,6 +54,7 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
     Renderiza el sidebar de filtros y retorna dict con valores seleccionados.
     """
     init_session_state()
+    fecha_min_datos, fecha_max_datos, hoy_datos = get_hoy_datos()
 
     with st.sidebar:
         # ── Logo / Título ──────────────────────────────────────
@@ -64,7 +81,7 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
             unsafe_allow_html=True,
         )
 
-        periodos = get_periodos()
+        periodos = get_periodos(hoy_datos)
         opciones = list(periodos.keys())
         idx_actual = opciones.index(st.session_state["periodo_sel"]) \
                      if st.session_state["periodo_sel"] in opciones else 0
@@ -79,22 +96,34 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
         st.session_state["periodo_sel"] = periodo_sel
 
         if periodo_sel == "Personalizado":
+            # valores previos acotados al rango con datos
+            desde_ini = min(max(st.session_state["fecha_desde"], fecha_min_datos), fecha_max_datos)
+            hasta_ini = min(max(st.session_state["fecha_hasta"], fecha_min_datos), fecha_max_datos)
             col_d, col_h = st.columns(2)
             with col_d:
                 fecha_desde = st.date_input(
                     "Desde",
-                    value    = st.session_state["fecha_desde"],
-                    key      = "_fecha_desde",
+                    value     = desde_ini,
+                    min_value = fecha_min_datos,
+                    max_value = fecha_max_datos,
+                    key       = "_fecha_desde",
                 )
             with col_h:
                 fecha_hasta = st.date_input(
                     "Hasta",
-                    value    = st.session_state["fecha_hasta"],
-                    key      = "_fecha_hasta",
+                    value     = hasta_ini,
+                    min_value = fecha_min_datos,
+                    max_value = fecha_max_datos,
+                    key       = "_fecha_hasta",
                 )
+            if fecha_desde > fecha_hasta:
+                fecha_desde, fecha_hasta = fecha_hasta, fecha_desde
         else:
             rango = periodos[periodo_sel]
             fecha_desde, fecha_hasta = rango
+            # nunca salir del rango con datos
+            fecha_desde = max(fecha_desde, fecha_min_datos)
+            fecha_hasta = min(fecha_hasta, fecha_max_datos)
 
         st.session_state["fecha_desde"] = fecha_desde
         st.session_state["fecha_hasta"] = fecha_hasta
@@ -180,10 +209,9 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
         # ── Botón limpiar filtros ──────────────────────────────
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🔄 Limpiar filtros", use_container_width=True):
-            hoy = date.today()
             st.session_state["periodo_sel"]    = "Este mes"
-            st.session_state["fecha_desde"]    = hoy.replace(day=1)
-            st.session_state["fecha_hasta"]    = hoy
+            st.session_state["fecha_desde"]    = hoy_datos.replace(day=1)
+            st.session_state["fecha_hasta"]    = hoy_datos
             st.session_state["zonas_sel"]      = []
             st.session_state["vendedores_sel"] = []
             st.session_state["canales_sel"]    = []
@@ -194,9 +222,9 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
             f"""
             <hr style="border-color:{COLORS['border']}; margin: 16px 0 8px 0;">
             <div style='font-size:10px;color:{COLORS['text_secondary']};text-align:center'>
-                Última actualización<br>
+                Datos actualizados al<br>
                 <strong style='color:{COLORS['text_primary']}'>
-                {date.today().strftime('%d/%m/%Y')}
+                {fecha_max_datos.strftime('%d/%m/%Y')}
                 </strong>
             </div>
             """,
@@ -211,3 +239,22 @@ def render_sidebar_filters(mostrar_vendedor: bool = True) -> dict:
         "canales_sel":    canales_sel,
         "periodo_sel":    periodo_sel,
     }
+
+
+def render_sin_datos() -> None:
+    """Aviso amigable cuando los filtros no devuelven datos, con botón de rescate
+    que vuelve al último mes con ventas. Llamar en lugar de st.warning + st.stop."""
+    _, fecha_max, hoy_datos = get_hoy_datos()
+    st.warning(
+        "⚠️ **No hay ventas en el período o filtros seleccionados.** "
+        f"El dataset de demo llega hasta el **{fecha_max.strftime('%d/%m/%Y')}**."
+    )
+    if st.button("📅 Ver el último mes con datos", type="primary"):
+        st.session_state["periodo_sel"]    = "Este mes"
+        st.session_state["fecha_desde"]    = hoy_datos.replace(day=1)
+        st.session_state["fecha_hasta"]    = hoy_datos
+        st.session_state["zonas_sel"]      = []
+        st.session_state["vendedores_sel"] = []
+        st.session_state["canales_sel"]    = []
+        st.rerun()
+    st.stop()

@@ -14,7 +14,7 @@ if os.path.exists(css_path):
     with open(css_path) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-from components.filters  import render_sidebar_filters, init_session_state
+from components.filters  import render_sidebar_filters, init_session_state, render_sin_datos
 from src.data_loader     import load_data, get_filtered_data, get_filtered_data_periodo_anterior, check_data_available
 from src.kpi_engine      import kpi_productos
 from components.kpi_card import render_kpi_card
@@ -54,8 +54,7 @@ st.markdown(
 )
 
 if df.empty:
-    st.warning("Sin datos para el período seleccionado.")
-    st.stop()
+    render_sin_datos()
 
 kp = kpi_productos(df, df_ant)
 
